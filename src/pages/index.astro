@@ -1,0 +1,163 @@
+---
+import Layout from "@layouts/Layout.astro";
+import ParkingSpot from "@components/ParkingSpot.jsx";
+
+import { getVehicles } from "../controllers/parking.controller";
+
+const autos = await getVehicles();
+
+const totalSpots = 20;
+const parkingSpots = Array(totalSpots).fill(null);
+
+autos.forEach((auto) => {
+    if (auto.slot <= totalSpots) {
+        parkingSpots[auto.slot - 1] = auto;
+    }
+});
+---
+
+<Layout title="Estacionamiento">
+    <div class="flex justify-center gap-4">
+        <h1 class="text-4xl font-bold text-center mb-4">Estacionamiento</h1>
+        <button
+            id="estacionar"
+            class="inline-flex items-center px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-md"
+            >Estacionar auto</button
+        >
+    </div>
+    <div id="parking" class="flex flex-wrap justify-center gap-4">
+        {
+            parkingSpots.map((spot, index) => (
+                <ParkingSpot key={index} vehicle={spot} />
+            ))
+        }
+    </div>
+    <div class="text-center mt-4">
+        <p class="text-lg font-semibold">Tarifa: $50 por minuto</p>
+    </div>
+</Layout>
+
+<script type="module" define:vars={{ autos, totalSpots }}>
+    const estacionar = document.getElementById("estacionar");
+    if (estacionar) {
+        estacionar.addEventListener("click", handleClick);
+    }
+    const btnsalir = document.querySelectorAll("#boton-pagar");
+    if (btnsalir) {
+        btnsalir.forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+                const paten = e.target.dataset.patente;
+                handleSalir(paten);
+            });
+        });
+    }
+
+    async function encontrarParkingCercano(vehicles, totalSlots) {
+        const slots = Array(totalSlots).fill(false);
+        vehicles.forEach((vehicle) => {
+            if (vehicle.slot <= totalSlots) {
+                slots[vehicle.slot - 1] = true;
+            }
+        });
+        const closestSlot = slots.findIndex((slot) => !slot) + 1;
+        return closestSlot > 0 ? closestSlot : null;
+    }
+
+    /******** NUEVO AUTO ***********/
+
+    async function handleClick() {
+        try {
+            if (autos.length >= totalSpots) {
+                throw new Error("No hay lugares disponibles");
+            }
+            const slot = await encontrarParkingCercano(autos, totalSpots);
+            const nuevoVehiculo = await createVehicle({
+                slot,
+            });
+            location.reload();
+        } catch (error) {
+            console.error("Error creando vehiculo:", error);
+        }
+    }
+    async function createVehicle(postData) {
+        const response = await fetch("/api/vehicle/create", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(postData),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || `Error. status: ${response.status}`);
+        }
+
+        return data.data;
+    }
+    /*******************/
+
+    async function handleSalir(pat) {
+        console.log(pat);
+        try {
+            const vehiculo = await updateVehicle({
+                patente: pat,
+            });
+            location.reload();
+        } catch (error) {
+            console.error("Error sacando vehiculo:", error);
+        }
+    }
+    async function updateVehicle(postData) {
+        const response = await fetch("/api/vehicle/update", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(postData),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || `Error. status: ${response.status}`);
+        }
+
+        return data.data;
+    }
+
+    /*********** OBTENER VEHICULOS **************/
+    async function getVehicles() {
+        const response = await fetch("/api/vehicle", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || `Error. status: ${response.status}`);
+        }
+        return data.data;
+    }
+
+    async function renderParkingSpots(autos) {
+        const parkingContainer = document.getElementById("parking");
+        parkingContainer.innerHTML = "";
+        const totalSlots = 20;
+        const parkingSpots = Array(totalSlots).fill(null);
+        autos.forEach((auto) => {
+            if (auto.slot <= totalSlots) {
+                parkingSpots[auto.slot - 1] = auto;
+            }
+        });
+        parkingSpots.forEach((spot, index) => {
+            const spotElement = document.createElement("div");
+            spotElement.innerHTML = ` <ParkingSpot key=${index} vehicle=${spot} /> `;
+            parkingContainer.appendChild(spotElement);
+        });
+    }
+</script>
