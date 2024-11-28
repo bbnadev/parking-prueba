@@ -14,6 +14,13 @@ export const getVehicles = async () => {
     return rows
 }
 
+export const getAllVehicles = async () => {
+    const [rows] = await pool.execute('SELECT * FROM autos')
+    return rows
+}
+
+
+
 export const getVehicle = async (patente: string) => {
     const [rows] = await pool.execute('SELECT * FROM autos WHERE patente = ?', [patente])
     return rows
@@ -25,16 +32,6 @@ export const createVehicle = async (vehicle: any) => {
 }
 
 export const updateVehicle = async (vehicle: any) => {
-    const [rows] = await pool.execute('UPDATE autos SET slot = 0, pago = "PAGADO" WHERE patente = ?', [vehicle.patente])
+    const [rows] = await pool.execute('UPDATE autos SET pago = "PAGADO" WHERE patente = ?', [vehicle.patente])
     return rows
 }
-
-// 	id INT PRIMARY KEY AUTO_INCREMENT,
-//     patente VARCHAR(6) UNIQUE NOT NULL,
-//     color VARCHAR(255),
-//     marca VARCHAR(50),
-//     tipo VARCHAR(50),
-//     pago ENUM ("PENDIENTE", "PAGADO") DEFAULT "PENDIENTE",
-//     slot TINYINT,
-//     fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
-//     fecha_modificacion  DATETIME ON UPDATE CURRENT_TIMESTAMP
