@@ -14,7 +14,14 @@ const ParkingSpot = ({ vehicle }) => {
         }
     }, [vehicle, fecha_registro]);
 
-
+    let hoursFormatted, minutesFormatted;
+    if (vehicle) {
+        const diffInMs = new Date() - new Date(fecha_registro);
+        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+        const diffInMinutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+        hoursFormatted = diffInHours;
+        minutesFormatted = diffInMinutes;
+    }
 
 
     return (
@@ -25,7 +32,7 @@ const ParkingSpot = ({ vehicle }) => {
                         <h2 className="text-xl font-semibold text-gray-700">Vehículo: {patente}</h2>
                         <p className="text-gray-500">Color: {color}</p>
                         <p className="text-gray-500">Ingreso: {new Date(fecha_registro).toLocaleString()}</p>
-                        <p className="text-gray-500">Tiempo estacionado: {minutesParked} min</p>
+                        <p className="text-gray-500">Tiempo estacionado: {hoursFormatted.toString().padStart(2, '0')} h, {minutesFormatted.toString().padStart(2, '0')} min</p>
                         <div className="mt-4">
                             <p className="text-lg font-semibold text-blue-500">Total: ${minutesParked * 50}</p>
                             <button id="boton-pagar" data-patente={patente} className="bg-blue-500 text-white p-2 rounded-lg">Pagar</button>
