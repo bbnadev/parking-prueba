@@ -1,0 +1,137 @@
+---
+import Layout from "@layouts/Layout.astro";
+import { getVehicles, getAllVehicles } from "../controllers/parking.controller";
+
+const autos = await getAllVehicles();
+
+// console.log(autos);
+
+const autosPagados = autos.filter((auto) => auto.pago == "PAGADO");
+const autosPendientes = autos.filter((auto) => auto.pago == "PENDIENTE");
+
+const filtarPlaza = (plaza) => {
+    return {
+        plaza: `Plaza ${plaza}`,
+        value: autos.filter((auto) => auto.slot == plaza).length,
+    };
+};
+
+console.table(autosPagados);
+console.table(autosPendientes);
+
+const calcTiempoStr = (fecha1: any, fecha2: any) => {
+    const diffInMs = fecha2 - fecha1;
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInMinutes = Math.floor(
+        (diffInMs % (1000 * 60 * 60)) / (1000 * 60),
+    );
+    return (
+        diffInHours.toString().padStart(2, "0") +
+        "h " +
+        diffInMinutes.toString().padStart(2, "0") +
+        " m"
+    );
+};
+
+const calcTotal = () => {
+    let total = 0;
+
+    autosPagados.forEach((auto) => {
+        total += calcPago(
+            auto.fecha_registro,
+            auto.fecha_modificacion ? auto.fecha_modificacion : new Date(),
+        );
+    });
+
+    return new Intl.NumberFormat("es-CL", {
+        style: "currency",
+        currency: "CLP",
+    }).format(total);
+};
+
+const calcPago = (fecha1: any, fecha2: any) => {
+    const minutos = Math.floor((fecha2 - fecha1) / 60000);
+
+    return minutos * 50;
+};
+
+const calcPagoStr = (fecha1: any, fecha2: any) => {
+    const minutos = Math.floor((fecha2 - fecha1) / 60000);
+
+    return new Intl.NumberFormat("es-CL", {
+        style: "currency",
+        currency: "CLP",
+    }).format(minutos * 50);
+};
+
+const formatDate = new Intl.DateTimeFormat("es-CL", {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+    hour12: false,
+});
+---
+
+<Layout title="Estacionamiento Metricas">
+    <div class="flex justify-center gap-4 p-6">
+        <h1 class="text-4xl font-bold text-center mb-4">Datos</h1>
+    </div>
+    <div class="flex justify-center p-6">
+        <table class="min-w-full text-sm text-left text-black">
+            <thead class="text-xs uppercase font-bold">
+                <tr>
+                    <th>Patente</th>
+                    <th>Fecha de ingreso</th>
+                    <th>Fecha de salida</th>
+                    <th>Estado</th>
+                    <th>Tiempo estacionado</th>
+                    <th>Valor</th>
+                </tr>
+            </thead>
+            <tbody>
+                {
+                    autos.map((auto, index) => (
+                        <tr
+                            key={index}
+                            class={`${auto.fecha_modificacion ? "bg-green-300" : "bg-yellow-300"}`}
+                        >
+                            <td>{auto.patente}</td>
+                            <td>{formatDate.format(auto.fecha_registro)}</td>
+                            <td>
+                                {formatDate.format(auto.fecha_modificacion)}
+                            </td>
+                            <td>{auto.pago}</td>
+                            <td>
+                                {calcTiempoStr(
+                                    auto.fecha_registro,
+                                    auto.fecha_modificacion
+                                        ? auto.fecha_modificacion
+                                        : new Date(),
+                                )}
+                            </td>
+                            <td>
+                                {calcPagoStr(
+                                    auto.fecha_registro,
+                                    auto.fecha_modificacion
+                                        ? auto.fecha_modificacion
+                                        : new Date(),
+                                )}
+                            </td>
+                        </tr>
+                    ))
+                }
+                <tr class={`bg-blue-300`}>
+                    <td class="font-bold">Total</td>
+                    <td></td>
+                    <td> </td>
+                    <td></td>
+                    <td> </td>
+                    <td>{calcTotal()}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</Layout>
